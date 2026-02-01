@@ -16,7 +16,7 @@ def get_face_embedding(image_path):
     try:
         face_detection = mp.solutions.face_detection.FaceDetection(
             model_selection=0,
-            min_detection_confidence=0.5
+            min_detection_confidence=0.3
         )
 
         results = face_detection.process(image_rgb)
