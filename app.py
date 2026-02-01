@@ -1,28 +1,53 @@
 import streamlit as st
 from PIL import Image
-from main import run_detection
+import os
 
-st.set_page_config(page_title="HATSS Test Panel")
+from main import add_known_face, run_detection
 
-st.title("HATSS – Face Recognition Test")
+st.set_page_config(page_title="HATSS", layout="centered")
 
-uploaded_file = st.file_uploader(
-    "Upload an image to test",
-    type=["jpg", "jpeg", "png"]
+st.title("🏠 HATSS – Smart Security System")
+
+st.header("Step 1: Add Known People")
+known_file = st.file_uploader(
+    "Upload image of a trusted person",
+    type=["jpg", "jpeg", "png"],
+    key="known"
 )
 
-if uploaded_file is not None:
-    image = Image.open(uploaded_file)
-    st.image(image, caption="Uploaded Image", use_column_width=True)
+if known_file:
+    img = Image.open(known_file)
+    st.image(img, caption="Known Person", use_column_width=True)
 
-    temp_path = "temp.jpg"
-    image.save(temp_path)
+    img.save("known_temp.jpg")
+    success = add_known_face("known_temp.jpg")
+    os.remove("known_temp.jpg")
 
-    result = run_detection(temp_path)
+    if success:
+        st.success("Known face added successfully")
+    else:
+        st.error("No face detected")
+
+st.divider()
+
+st.header("Step 2: Detect Intrusion")
+test_file = st.file_uploader(
+    "Upload image to test",
+    type=["jpg", "jpeg", "png"],
+    key="test"
+)
+
+if test_file:
+    img = Image.open(test_file)
+    st.image(img, caption="Detected Person", use_column_width=True)
+
+    img.save("test_temp.jpg")
+    result = run_detection("test_temp.jpg")
+    os.remove("test_temp.jpg")
 
     if result == "Known":
-        st.success("✅ Known person detected")
+        st.success("✅ Known person – no alert")
     elif result == "Unknown":
-        st.error("🚨 Unknown person detected – Alert triggered")
+        st.error("🚨 Unknown person detected – ALERT")
     else:
         st.warning(result)
