@@ -1,54 +1,33 @@
-import cv2
+from PIL import Image
 import mediapipe as mp
 import numpy as np
 
 def get_face_embedding(image_path):
-    # Read image safely
-    image = cv2.imread(image_path)
-    if image is None:
-        return None
-
     try:
-        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    except Exception:
-        return None
+        # Load image using PIL (stable on Streamlit)
+        image = Image.open(image_path).convert("RGB")
+        image_np = np.array(image)
 
-    try:
-        face_detection = mp.solutions.face_detection.FaceDetection(
+        mp_face_detection = mp.solutions.face_detection
+
+        with mp_face_detection.FaceDetection(
             model_selection=0,
             min_detection_confidence=0.3
-        )
+        ) as detector:
 
-        results = face_detection.process(image_rgb)
+            results = detector.process(image_np)
 
-        # Close detector properly (important for Streamlit)
-        face_detection.close()
+            if not results or not results.detections:
+                return None
 
-        if results is None:
-            return None
-        if results.detections is None:
-            return None
-        if len(results.detections) == 0:
-            return None
+            bbox = results.detections[0].location_data.relative_bounding_box
 
-        detection = results.detections[0]
-
-        # Defensive access
-        if not hasattr(detection, "location_data"):
-            return None
-        if not hasattr(detection.location_data, "relative_bounding_box"):
-            return None
-
-        bbox = detection.location_data.relative_bounding_box
-
-        # Convert to simple numeric vector
-        return np.array([
-            float(bbox.xmin),
-            float(bbox.ymin),
-            float(bbox.width),
-            float(bbox.height)
-        ])
+            return np.array([
+                float(bbox.xmin),
+                float(bbox.ymin),
+                float(bbox.width),
+                float(bbox.height)
+            ])
 
     except Exception:
-        # Never let CV crash the app
         return None
