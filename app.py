@@ -1,163 +1,170 @@
 import streamlit as st
-from PIL import Image
 import random
 import time
 
-# --------------------------------------------------
-# PAGE CONFIG
-# --------------------------------------------------
+# ---------------------------------------------------
+# PAGE CONFIG + SECURITY THEME
+# ---------------------------------------------------
 st.set_page_config(
-    page_title="Intrusion Detection System",
-    layout="centered"
+    page_title="Home Security System",
+    layout="wide"
 )
 
-# --------------------------------------------------
-# SESSION STATE INIT
-# --------------------------------------------------
+st.markdown("""
+<style>
+body {
+    background-color: #0f172a;
+}
+.main-title {
+    font-size: 32px;
+    font-weight: bold;
+    color: #e5e7eb;
+}
+.card {
+    background-color: #1f2933;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #334155;
+}
+.status-green {
+    color: #22c55e;
+    font-weight: bold;
+}
+.status-red {
+    color: #ef4444;
+    font-weight: bold;
+}
+.metric {
+    font-size: 20px;
+    font-weight: bold;
+}
+.alert-box {
+    background-color: #3b0a0a;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #ef4444;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ---------------------------------------------------
+# SESSION STATE
+# ---------------------------------------------------
 if "page" not in st.session_state:
-    st.session_state.page = "Live Monitor"
+    st.session_state.page = "Dashboard"
+
+if "known" not in st.session_state:
+    st.session_state.known = 18
+
+if "unknown" not in st.session_state:
+    st.session_state.unknown = 5
 
 if "intrusion" not in st.session_state:
     st.session_state.intrusion = False
 
-if "known_count" not in st.session_state:
-    st.session_state.known_count = 12
+# ---------------------------------------------------
+# SIDEBAR NAV
+# ---------------------------------------------------
+st.sidebar.title("🔐 Security Panel")
 
-if "unknown_count" not in st.session_state:
-    st.session_state.unknown_count = 4
-
-# --------------------------------------------------
-# SIDEBAR NAVIGATION
-# --------------------------------------------------
-st.sidebar.title("🔐 Navigation")
 st.session_state.page = st.sidebar.radio(
-    "Go to",
-    ["Live Monitor", "Alerts", "Memory", "Settings"]
+    "Navigation",
+    ["Dashboard", "Alert Center", "Memory Logs", "System Settings"]
 )
 
-# --------------------------------------------------
-# 1️⃣ LIVE MONITOR PAGE
-# --------------------------------------------------
-if st.session_state.page == "Live Monitor":
+st.sidebar.markdown("---")
+st.sidebar.write("System Status:")
+st.sidebar.markdown('<span class="status-green">● ACTIVE</span>',
+                    unsafe_allow_html=True)
 
-    st.title("🏠 Intrusion Detection System")
-    st.subheader("Live Camera Monitor")
+# ===================================================
+# DASHBOARD
+# ===================================================
+if st.session_state.page == "Dashboard":
 
-    st.image(
-        "https://via.placeholder.com/400x250?text=Live+Camera+Feed",
-        caption="Camera Feed"
-    )
+    st.markdown('<div class="main-title">🏠 Live Security Dashboard</div>',
+                unsafe_allow_html=True)
 
-    st.success("🟢 System Active")
-    st.write(f"Last Scan: {random.randint(1,5)} seconds ago")
+    col1, col2 = st.columns([2, 1])
 
-    col1, col2 = st.columns(2)
-    col1.metric("Known Memory", st.session_state.known_count)
-    col2.metric("Unknown Memory", st.session_state.unknown_count)
+    # Live feed card
+    with col1:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.subheader("Live Camera Monitor")
+        st.image(
+            "https://via.placeholder.com/900x450?text=LIVE+FEED",
+            use_column_width=True
+        )
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    # Metrics panel
+    with col2:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.subheader("System Metrics")
+
+        st.metric("Known Profiles", st.session_state.known)
+        st.metric("Unknown Records", st.session_state.unknown)
+        st.metric("Last Scan", f"{random.randint(1,5)} sec")
+
+        st.markdown("</div>", unsafe_allow_html=True)
 
     st.divider()
 
-    if st.button("🔍 Simulate Face Detection"):
+    if st.button("🔍 Simulate Detection Event"):
         st.session_state.intrusion = random.choice([True, False])
+
         if st.session_state.intrusion:
-            st.session_state.page = "Alerts"
-            st.experimental_rerun()
+            st.session_state.page = "Alert Center"
+            st.rerun()
         else:
-            st.toast("Authorized face detected", icon="✅")
+            st.toast("Authorized individual detected", icon="✅")
 
-# --------------------------------------------------
-# 2️⃣ ALERT & DECISION PAGE
-# --------------------------------------------------
-elif st.session_state.page == "Alerts":
+# ===================================================
+# ALERT CENTER
+# ===================================================
+elif st.session_state.page == "Alert Center":
 
-    st.error("🚨 INTRUSION DETECTED")
+    st.markdown('<div class="main-title">🚨 Intrusion Alert Center</div>',
+                unsafe_allow_html=True)
 
-    st.image(
-        "https://via.placeholder.com/300x300?text=Captured+Face",
-        caption="Captured Image"
-    )
+    st.markdown('<div class="alert-box">', unsafe_allow_html=True)
 
-    similarity = round(random.uniform(0.30, 0.55), 2)
-    st.write(f"**Similarity Score:** {similarity}")
-    st.write("**Risk Level:** 🔴 HIGH")
+    st.error("UNAUTHORIZED PRESENCE DETECTED")
 
-    st.divider()
-
-    col1, col2 = st.columns(2)
+    col1, col2 = st.columns([1, 1])
 
     with col1:
-        if st.button("✅ Approve"):
-            st.session_state.known_count += 1
-            st.session_state.intrusion = False
-            st.success("Added to KNOWN memory")
-            time.sleep(1)
-            st.session_state.page = "Live Monitor"
-            st.experimental_rerun()
+        st.image(
+            "https://via.placeholder.com/400?text=Captured+Face",
+            caption="Captured Snapshot"
+        )
 
     with col2:
-        if st.button("❌ Reject"):
-            st.session_state.unknown_count += 1
-            st.session_state.intrusion = False
-            st.warning("Added to UNKNOWN memory")
+        similarity = round(random.uniform(0.32, 0.55), 2)
+
+        st.write(f"**Similarity Score:** {similarity}")
+        st.write("**Risk Level:** HIGH 🔴")
+        st.write("**Timestamp:** Just now")
+
+        st.divider()
+
+        approve = st.button("✅ Approve Access")
+        reject = st.button("❌ Mark as Intruder")
+
+        if approve:
+            st.session_state.known += 1
+            st.success("Profile added to authorized memory")
             time.sleep(1)
-            st.session_state.page = "Live Monitor"
-            st.experimental_rerun()
+            st.session_state.page = "Dashboard"
+            st.rerun()
 
-# --------------------------------------------------
-# 3️⃣ MEMORY OVERVIEW PAGE
-# --------------------------------------------------
-elif st.session_state.page == "Memory":
+        if reject:
+            st.session_state.unknown += 1
+            st.warning("Intruder recorded")
+            time.sleep(1)
+            st.session_state.page = "Dashboard"
+            st.rerun()
 
-    st.title("🧠 System Memory Overview")
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    st.subheader("KNOWN Memory")
-    st.write(f"Total entries: {st.session_state.known_count}")
-
-    cols = st.columns(4)
-    for i in range(8):
-        with cols[i % 4]:
-            st.image(
-                "https://via.placeholder.com/100?text=Known",
-                use_column_width=True
-            )
-
-    st.divider()
-
-    st.subheader("UNKNOWN Memory")
-    st.write(f"Total entries: {st.session_state.unknown_count}")
-
-    cols = st.columns(4)
-    for i in range(8):
-        with cols[i % 4]:
-            st.image(
-                "https://via.placeholder.com/100?text=Unknown",
-                use_column_width=True
-            )
-
-# --------------------------------------------------
-# 4️⃣ SETTINGS PAGE
-# --------------------------------------------------
-elif st.session_state.page == "Settings":
-
-    st.title("⚙️ System Settings")
-
-    st.subheader("Sensitivity Level")
-    st.slider(
-        "Recognition Strictness",
-        min_value=1,
-        max_value=10,
-        value=5
-    )
-
-    st.subheader("Alerts")
-    st.checkbox("Push Notification", value=True)
-    st.checkbox("Sound Alert", value=True)
-
-    st.subheader("System Controls")
-    if st.button("⏸ Pause System"):
-        st.toast("System Paused", icon="⏸")
-
-    if st.button("♻️ Reset UNKNOWN Memory"):
-        st.session_state.unknown_count = 0
-        st.success("Unknown memory cleared")
-
+# =============================================
