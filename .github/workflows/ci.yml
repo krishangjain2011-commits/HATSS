@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: Frontend quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Verify formatting
+        run: npm run format:check
+
+      - name: Run tests
+        run: npm run test:run
+
+      - name: Build production bundle
+        run: npm run build
+
+  backend:
+    name: Backend quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgresql:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: hatss
+          POSTGRES_USER: hatss
+          POSTGRES_PASSWORD: test-only-password
+        options: >-
+          --health-cmd "pg_isready -U hatss -d hatss"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    env:
+      HATSS_ENVIRONMENT: test
+      HATSS_DEBUG: "false"
+      HATSS_DOCS_ENABLED: "false"
+      HATSS_CORS_ORIGINS: '["http://localhost:5173"]'
+      HATSS_TRUSTED_HOSTS: '["localhost","127.0.0.1","testserver"]'
+      HATSS_DATABASE_HOST: 127.0.0.1
+      HATSS_DATABASE_PORT: "5432"
+      POSTGRES_DB: hatss
+      POSTGRES_USER: hatss
+      POSTGRES_PASSWORD: test-only-password
+      HATSS_RUN_DATABASE_TESTS: "true"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install dependencies
+        run: python -m pip install -e ".[dev]"
+
+      - name: Lint
+        run: python -m ruff check .
+
+      - name: Verify formatting
+        run: python -m black --check .
+
+      - name: Apply Alembic migration baseline
+        run: python -m alembic upgrade head
+
+      - name: Run tests
+        run: python -m pytest

@@ -1,0 +1,1 @@
+"""HATSS API application package."""
