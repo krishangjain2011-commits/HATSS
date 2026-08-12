@@ -1,6 +1,7 @@
 """ESP32 sensor endpoints."""
 
 import asyncio
+import os
 import httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -11,7 +12,8 @@ from datetime import datetime
 
 router = APIRouter(prefix="/sensors", tags=["sensors"])
 
-ESP32_IP = "192.168.4.1"
+# Get ESP32 IP from environment or use default
+ESP32_IP = os.getenv("HATSS_ESP32_IP", "192.168.4.1")
 ESP32_URL = f"http://{ESP32_IP}/api/sensors"
 
 

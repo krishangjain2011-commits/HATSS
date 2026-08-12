@@ -1,17 +1,12 @@
-# Render.com Configuration for HATSS
-# This file defines how Render should build and deploy your services
-# Reference: https://render.com/docs/infrastructure-as-code
+# Render.com Infrastructure as Code Configuration
+# Complete setup for HATSS deployment
 
 services:
   # Frontend Static Site
   - type: static_site
     name: hatss-frontend
-    # The root directory where the frontend lives
-    rootDir: frontend
-    # Build command - runs from the root of the repository
-    buildCommand: npm install && npm run build
-    # Directory where the built files are
-    publishDirectory: dist
+    buildCommand: npm install --prefix frontend && npm run build --prefix frontend
+    publishDirectory: frontend/dist
     envVars:
       - key: NODE_ENV
         value: production
@@ -21,16 +16,55 @@ services:
     name: hatss-backend
     runtime: python
     pythonVersion: 3.11
-    # The root directory where the backend lives
-    rootDir: backend
-    # Build command - runs from the root of the repository
-    buildCommand: pip install -e . && pip install gunicorn
-    # Command to start the server
-    startCommand: gunicorn -w 4 -k uvicorn.workers.UvicornWorker app.main:app
+    buildCommand: cd backend && pip install -e . && pip install gunicorn
+    startCommand: cd backend && alembic upgrade head && gunicorn -w 4 -k uvicorn.workers.UvicornWorker app.main:app
     envVars:
+      # Core Configuration
       - key: HATSS_ENVIRONMENT
         value: production
       - key: HATSS_DEBUG
         value: "false"
       - key: HATSS_DOCS_ENABLED
         value: "false"
+      - key: HATSS_API_V1_PREFIX
+        value: "/api/v1"
+      - key: HATSS_APP_NAME
+        value: "HATSS API"
+      - key: HATSS_APP_VERSION
+        value: "0.1.0"
+      
+      # Database Configuration (update with actual Render DB values)
+      - key: HATSS_DATABASE_HOST
+        value: "postgresql-database-host"  # Replace with actual Render DB host
+      - key: HATSS_DATABASE_PORT
+        value: "5432"
+      - key: HATSS_DATABASE_NAME
+        value: "hatss"
+      - key: HATSS_DATABASE_USER
+        value: "hatss"
+      - key: HATSS_DATABASE_PASSWORD
+        value: "CHANGE_ME"  # Set in Render dashboard
+      - key: POSTGRES_DB
+        value: "hatss"
+      - key: POSTGRES_USER
+        value: "hatss"
+      - key: POSTGRES_PASSWORD
+        value: "CHANGE_ME"  # Set in Render dashboard
+      
+      # CORS & Security (update hatss-frontend URL once deployed)
+      - key: HATSS_CORS_ORIGINS
+        value: '["https://hatss-frontend.onrender.com"]'
+      - key: HATSS_TRUSTED_HOSTS
+        value: '["hatss-backend.onrender.com","localhost","127.0.0.1"]'
+      
+      # ESP32 Configuration (optional - set to your ESP32 IP if available)
+      - key: HATSS_ESP32_IP
+        value: "192.168.4.1"
+
+  # PostgreSQL Database (Optional - uncomment if using Render Postgres)
+  # - type: postgres
+  #   name: hatss-postgres
+  #   ipAllowList: []
+  #   databaseName: hatss
+  #   user: hatss
+  #   version: "15"
