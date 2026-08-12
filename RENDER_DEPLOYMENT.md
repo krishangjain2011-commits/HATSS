@@ -13,15 +13,27 @@ This guide walks you through deploying the HATSS application to Render.com with 
 
 ---
 
-## Step 1: Prepare the Repository
+## Quick Fix for Current Error
 
-Make sure all changes are committed and pushed:
+**Error**: `failed to read dockerfile: open Dockerfile: no such file or directory`
 
-```bash
-git add .
-git commit -m "Ready for Render deployment"
-git push origin feature/esp32-direct-integration
-```
+**Solution**: Render's native build doesn't need Docker. Follow these steps:
+
+### For Frontend Service:
+1. Go to **Service** → **Settings** → **Build & Deploy**
+2. **Uncheck** "Use Docker"
+3. Set:
+   - **Build Command**: `cd frontend && npm install && npm run build`
+   - **Publish Directory**: `frontend/dist`
+4. Save and redeploy
+
+### For Backend Service:
+1. Go to **Service** → **Settings** → **Build & Deploy**
+2. **Uncheck** "Use Docker"
+3. Set:
+   - **Build Command**: `cd backend && pip install -e . && pip install gunicorn`
+   - **Start Command**: `cd backend && gunicorn -w 4 -k uvicorn.workers.UvicornWorker app.main:app`
+4. Save and redeploy
 
 ---
 
