@@ -1,0 +1,69 @@
+================================================================================
+                    HATSS - TECH STACK SUMMARY
+================================================================================
+
+FRONTEND
+--------
+• React 19.0.0 - UI framework
+• TypeScript 5.8.3 - Type safety
+• Vite 7.0.0 - Build tool & dev server (port 5173)
+• Tailwind CSS 4.1.0 - Styling
+• Vitest - Testing framework
+• ESLint + Prettier - Code quality
+
+BACKEND
+-------
+• FastAPI 0.115.x - Web framework (async)
+• Uvicorn 0.34.x - ASGI server (port 8000)
+• Python 3.11+
+• SQLAlchemy 2.0.36+ - ORM
+• PostgreSQL (psycopg3) - Database
+• YOLOv8 (ultralytics) - Face detection
+• OpenCV 4.8.x - Image processing
+• NumPy 2.0.x - Numerical computing
+• httpx - Async HTTP client
+• Alembic - Database migrations
+
+HARDWARE (ESP32)
+----------------
+• Microcontroller: ESP32 DevKit v1
+• Language: Arduino C++
+• WiFi: Station + AP mode (192.168.4.1)
+• Sensors:
+  - IR Motion (GPIO 27)
+  - Flame Detector (GPIO 32)
+  - MQ2 Gas (GPIO 33)
+  - Water Level (GPIO 34)
+  - Buzzer (GPIO 25)
+  - 0.96" OLED Display (I2C)
+
+API ENDPOINTS
+-------------
+ESP32: http://192.168.4.1/api/sensors
+Backend: http://localhost:8000/api/v1/
+Frontend: http://localhost:5173
+
+DATA FLOW
+---------
+ESP32 Sensors → ESP32 API → Frontend (direct fetch)
+                    ↓
+              Backend Proxy (fallback)
+
+KEY FEATURES
+------------
+✓ Real-time sensor monitoring (10ms updates)
+✓ Direct ESP32 data fetching (192.168.4.1)
+✓ Async backend (non-blocking)
+✓ Face recognition (YOLOv8)
+✓ CORS-enabled
+✓ Dark/Light theme
+✓ Responsive design
+✓ Live alerts & notifications
+
+VERSIONS
+--------
+• Node.js: 22.0.0 - 24.x
+• Python: 3.11+
+• Arduino IDE: 2.0+
+
+Repository: https://github.com/krishangjain2011-commits/HATSS
