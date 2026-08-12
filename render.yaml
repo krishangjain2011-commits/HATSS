@@ -1,20 +1,24 @@
+# Render.com Native Build Configuration (No Docker)
+# This configuration uses Render's native runtimes instead of Docker
+
 services:
-  # Frontend Service - Static Site (No Docker needed)
+  # Frontend - Static Site
   - type: static_site
     name: hatss-frontend
-    buildCommand: cd frontend && npm install && npm run build
+    buildCommand: npm install --prefix frontend && npm run build --prefix frontend
     publishDirectory: frontend/dist
     envVars:
       - key: NODE_ENV
         value: production
 
-  # Backend Service - Web Service (No Docker needed)
+  # Backend - Web Service  
   - type: web
     name: hatss-backend
     runtime: python
     pythonVersion: 3.11
-    buildCommand: cd backend && pip install -e . && pip install gunicorn
-    startCommand: cd backend && gunicorn -w 4 -k uvicorn.workers.UvicornWorker app.main:app
+    buildCommand: pip install -e backend && pip install gunicorn
+    startCommand: gunicorn -w 4 -k uvicorn.workers.UvicornWorker app.main:app
+    workingDirectory: backend
     envVars:
       - key: HATSS_ENVIRONMENT
         value: production
@@ -22,4 +26,3 @@ services:
         value: "false"
       - key: HATSS_DOCS_ENABLED
         value: "false"
-
