@@ -1,0 +1,51 @@
+services:
+  # Frontend Service
+  - type: web
+    name: hatss-frontend
+    runtime: node
+    buildCommand: |
+      cd frontend
+      npm install
+      npm run build
+    startCommand: npm run preview
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: VITE_API_URL
+        value: https://hatss-backend.onrender.com
+    routes:
+      - path: /
+        destination: /index.html
+
+  # Backend Service
+  - type: web
+    name: hatss-backend
+    runtime: python
+    pythonVersion: 3.11
+    buildCommand: |
+      pip install -e .
+      alembic upgrade head
+    startCommand: gunicorn -w 4 -k uvicorn.workers.UvicornWorker app.main:app
+    envVars:
+      - key: HATSS_ENVIRONMENT
+        value: production
+      - key: HATSS_DEBUG
+        value: false
+      - key: HATSS_DOCS_ENABLED
+        value: false
+      - key: HATSS_DATABASE_HOST
+        value: postgres_db_hostname
+      - key: HATSS_DATABASE_PORT
+        value: 5432
+      - key: HATSS_CORS_ORIGINS
+        value: '["https://hatss-frontend.onrender.com"]'
+      - key: HATSS_TRUSTED_HOSTS
+        value: '["hatss-backend.onrender.com","localhost","127.0.0.1"]'
+      - key: POSTGRES_DB
+        value: hatss
+      - key: POSTGRES_USER
+        value: hatss
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: postgres_database
+          property: password
