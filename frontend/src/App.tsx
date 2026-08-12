@@ -264,10 +264,6 @@ export function App() {
       'Sensors',
       'ESP32 sensor status including fire detection, motion/PIR, and gas detection.',
     ],
-    '#copilot': [
-      'AI copilot',
-      'A local Ollama model can explain bounded HATSS evidence after your consent.',
-    ],
   };
   const [title, description] = pageTitles[route];
 
@@ -692,8 +688,7 @@ export function App() {
           route === '#network' ||
           route === '#files' ||
           route === '#face' ||
-          route === '#sensors' ||
-          route === '#copilot'
+          route === '#sensors'
             ? page
             : overview
               ? page

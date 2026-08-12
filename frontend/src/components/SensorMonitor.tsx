@@ -35,12 +35,15 @@ export function SensorMonitor({ theme }: SensorMonitorProps) {
         // Try to fetch directly from ESP32 at 192.168.4.1
         console.log('🔍 Fetching from ESP32 directly (192.168.4.1)...');
 
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
+        
         const response = await fetch('http://192.168.4.1/api/sensors', {
           method: 'GET',
           mode: 'cors',
           credentials: 'omit',
-          timeout: 2000,
-        });
+          signal: controller.signal,
+        }).finally(() => clearTimeout(timeoutId));
 
         if (response.status === 200) {
           const data = await response.json();

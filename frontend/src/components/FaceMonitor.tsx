@@ -16,7 +16,6 @@ export function FaceMonitor({ theme }: FaceMonitorProps) {
   const [registrationStatus, setRegistrationStatus] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
   const [registrationFrameCount, setRegistrationFrameCount] = useState(0);
-  const [registrationFrames, setRegistrationFrames] = useState<Blob[]>([]);
 
   // Initialize camera - SIMPLIFIED
   useEffect(() => {
@@ -153,7 +152,6 @@ export function FaceMonitor({ theme }: FaceMonitorProps) {
     try {
       setIsRegistering(true);
       setRegistrationFrameCount(0);
-      setRegistrationFrames([]);
 
       const angles = [
         { number: 1, instruction: 'Position straight at camera' },
@@ -204,7 +202,6 @@ export function FaceMonitor({ theme }: FaceMonitorProps) {
         setRegistrationStatus(`✅ ${registrationName} registered successfully with 3 angles!`);
         setRegistrationName('');
         setRegistrationFrameCount(0);
-        setRegistrationFrames([]);
         setTimeout(() => {
           setShowRegistration(false);
           setRegistrationStatus('');

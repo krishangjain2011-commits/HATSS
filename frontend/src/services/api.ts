@@ -1,4 +1,4 @@
-const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, '');
+const configuredApiBaseUrl = import.meta.env.VITE_API_URL?.replace(/\/+$/, '');
 const apiBaseUrl = configuredApiBaseUrl || '/api/v1';
 
 export function apiPath(path: string): string {
