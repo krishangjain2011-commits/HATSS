@@ -31,7 +31,7 @@ app/schemas/system.py
 app/services/__init__.py
 app/services/copilot.py
 app/services/esp32_sensors.py
-app/services/face_recognition.py
+app/services/face_recognition_v2.py
 app/services/file_security.py
 app/services/intrusion_detector.py
 app/services/sensor_monitor.py

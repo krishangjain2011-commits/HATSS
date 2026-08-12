@@ -9,16 +9,12 @@ import { SensorMonitor } from './components/SensorMonitor';
 import { Sidebar } from './components/Sidebar';
 import { SystemHealth } from './components/SystemHealth';
 import {
-  getCopilotStatus,
   getDefenderScanCapability,
   getDefenderOverview,
   getNetworkOverview,
   getSystemOverview,
   getSysmonOverview,
-  requestCopilotBrief,
   startDefenderScan,
-  type CopilotBrief,
-  type CopilotStatus,
   type DefenderScanCapability,
   type DefenderOverview,
   type DefenderScanAction,
@@ -28,7 +24,7 @@ import {
 } from './services/api';
 
 const refreshMs = 10_000;
-type AppRoute = '#overview' | '#security' | '#processes' | '#network' | '#files' | '#face' | '#sensors' | '#copilot';
+type AppRoute = '#overview' | '#security' | '#processes' | '#network' | '#files' | '#face' | '#sensors';
 type ThemeMode = 'light' | 'dark';
 const routes: AppRoute[] = [
   '#overview',
@@ -38,7 +34,6 @@ const routes: AppRoute[] = [
   '#files',
   '#face',
   '#sensors',
-  '#copilot',
 ];
 
 function currentRoute(): AppRoute {
@@ -109,17 +104,10 @@ export function App() {
   const [sysmon, setSysmon] = useState<SysmonOverview | null>(null);
   const [network, setNetwork] = useState<NetworkOverview | null>(null);
   const [scanCapability, setScanCapability] = useState<DefenderScanCapability | null>(null);
-  const [copilotStatus, setCopilotStatus] = useState<CopilotStatus | null>(null);
   const [scanDirectory, setScanDirectory] = useState('');
   const [scanAction, setScanAction] = useState<DefenderScanAction | null>(null);
   const [scanError, setScanError] = useState<string | null>(null);
   const [isStartingScan, setIsStartingScan] = useState(false);
-  const [copilotQuestion, setCopilotQuestion] = useState(
-    'Summarize the current security evidence.',
-  );
-  const [copilotBrief, setCopilotBrief] = useState<CopilotBrief | null>(null);
-  const [copilotError, setCopilotError] = useState<string | null>(null);
-  const [isRequestingBrief, setIsRequestingBrief] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -131,21 +119,18 @@ export function App() {
         nextSysmon,
         nextNetwork,
         nextScanCapability,
-        nextCopilotStatus,
       ] = await Promise.all([
         getSystemOverview(signal),
         getDefenderOverview(signal),
         getSysmonOverview(signal),
         getNetworkOverview(signal),
         getDefenderScanCapability(signal),
-        getCopilotStatus(signal),
       ]);
       setOverview(nextOverview);
       setDefender(nextDefender);
       setSysmon(nextSysmon);
       setNetwork(nextNetwork);
       setScanCapability(nextScanCapability);
-      setCopilotStatus(nextCopilotStatus);
       setError(null);
     } catch (requestError) {
       if (requestError instanceof DOMException && requestError.name === 'AbortError') return;
@@ -168,24 +153,6 @@ export function App() {
       );
     } finally {
       setIsStartingScan(false);
-    }
-  }
-
-  async function handleCopilotBrief(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setIsRequestingBrief(true);
-    setCopilotError(null);
-    setCopilotBrief(null);
-    try {
-      setCopilotBrief(await requestCopilotBrief(copilotQuestion));
-    } catch (requestError) {
-      setCopilotError(
-        requestError instanceof Error
-          ? requestError.message
-          : 'Unable to request a local AI briefing.',
-      );
-    } finally {
-      setIsRequestingBrief(false);
     }
   }
 
@@ -527,18 +494,6 @@ export function App() {
               detail={network.state.detail}
               source="Windows networking"
             />
-            <button
-              className="rounded-2xl border border-slate-700 bg-slate-950 px-3 py-2 text-left text-sm font-medium text-white transition hover:-translate-y-0.5 hover:shadow-lg hover:bg-slate-900"
-              onClick={() => {
-                setCopilotQuestion(
-                  'Explain the IP addresses, ports, TCP states, interface names, MAC addresses, and process IDs shown on the Network page. Tell me what each means and what would be worth reviewing, without calling anything malicious without evidence.',
-                );
-                window.location.hash = '#copilot';
-              }}
-              type="button"
-            >
-              Ask copilot to explain these network fields
-            </button>
             <p>
               Neighbor entries returned:{' '}
               <span className="font-medium text-slate-900">{network.neighbors.length}</span>
@@ -685,74 +640,6 @@ export function App() {
     </section>
   );
 
-  const copilotPage = (
-    <section className="mt-7 grid gap-7 xl:grid-cols-[1.3fr_1fr]">
-      <DashboardPanel
-        description="Ask general security questions or ask what the current HATSS evidence says about this device. It cannot run commands, change Defender, scan files, or act on the host."
-        theme={theme}
-        title="Evidence briefing"
-      >
-        <div className="space-y-4 text-sm leading-6 text-slate-600">
-          {copilotStatus ? (
-            <p className={copilotStatus.enabled ? 'text-emerald-700' : 'text-amber-700'}>
-              {copilotStatus.detail} Model: {copilotStatus.model}.
-            </p>
-          ) : (
-            <p>Checking local AI availability…</p>
-          )}
-          <form className="space-y-3" onSubmit={handleCopilotBrief}>
-            <label className="block font-medium text-slate-900" htmlFor="copilot-question">
-              Ask about device security or current evidence
-            </label>
-            <textarea
-              className="min-h-28 w-full rounded-2xl border border-slate-700 bg-slate-950/95 px-3 py-2 text-white outline-none transition focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-100"
-              disabled={!copilotStatus?.enabled || isRequestingBrief}
-              id="copilot-question"
-              minLength={3}
-              onChange={(event) => setCopilotQuestion(event.target.value)}
-              required
-              value={copilotQuestion}
-            />
-            <p className="text-xs text-slate-500">
-              Submitting explicitly shares a bounded local evidence summary—including system,
-              Defender, Sysmon, and network telemetry—with the local Ollama model.
-              Sysmon context can include command lines and file paths from recent events.
-            </p>
-            <button
-              className="rounded-xl bg-gradient-to-r from-cyan-300 via-sky-400 to-violet-500 px-4 py-2 text-sm font-semibold text-slate-950 shadow-[0_12px_30px_-12px_rgba(34,211,238,0.7)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
-              disabled={!copilotStatus?.enabled || isRequestingBrief}
-              type="submit"
-            >
-              {isRequestingBrief ? 'Generating local briefing…' : 'Request evidence briefing'}
-            </button>
-          </form>
-          {copilotError ? <p className="text-amber-700">{copilotError}</p> : null}
-          {copilotBrief ? (
-            <div className="rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50 to-cyan-50 p-4 whitespace-pre-wrap text-slate-800">
-              {copilotBrief.answer}
-            </div>
-          ) : null}
-        </div>
-      </DashboardPanel>
-      <DashboardPanel
-        description="No cloud model or API key is configured by HATSS."
-        theme={theme}
-        title="Enable local AI"
-      >
-        <div className="space-y-3 text-sm leading-6 text-slate-600">
-          <p>
-            Install Ollama and pull a model locally, then set{' '}
-            <code className="text-fuchsia-600">HATSS_COPILOT_ENABLED=true</code> before starting the
-            backend.
-          </p>
-          <p>
-            Until then, this page remains deliberately disabled rather than pretending to be AI.
-          </p>
-        </div>
-      </DashboardPanel>
-    </section>
-  );
-
   const facePage = (
     <section className="mt-7 grid gap-7">
       <FaceMonitor theme={theme} />
@@ -779,9 +666,7 @@ export function App() {
               ? fileSecurityPage
               : route === '#face'
                 ? facePage
-                : route === '#sensors'
-                  ? sensorsPage
-                  : copilotPage;
+                : sensorsPage;
 
   return (
     <div className={`app-shell min-h-screen bg-transparent ${theme === 'dark' ? 'text-slate-100' : 'text-slate-800'}`}>

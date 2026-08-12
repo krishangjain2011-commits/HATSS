@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Auto-start Backend and Frontend",
+  "description": "Starts the HATSS backend API server and frontend dev server together with a single trigger",
+  "version": "1",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "powershell -Command \"Start-Process powershell -ArgumentList '-NoExit', '-Command', 'cd e:\\hatss_Hi\\backend; C:\\Python313\\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload'; Start-Sleep -Seconds 2; Start-Process powershell -ArgumentList '-NoExit', '-Command', 'cd e:\\hatss_Hi\\frontend; npm run dev'\""
+  }
+}

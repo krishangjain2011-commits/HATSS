@@ -6,7 +6,6 @@ const navigationItems = [
   { href: '#files', label: 'File security', mark: 'F' },
   { href: '#face', label: 'Face recognition', mark: 'R' },
   { href: '#sensors', label: 'Sensors', mark: 'E' },
-  { href: '#copilot', label: 'AI copilot', mark: 'A' },
 ] as const;
 
 interface SidebarProps {
