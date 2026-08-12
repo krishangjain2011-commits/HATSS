@@ -2,7 +2,6 @@
 
 from functools import lru_cache
 from typing import Literal, Self
-from urllib.parse import urlparse
 
 from pydantic import AliasChoices, AnyHttpUrl, Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -29,11 +28,6 @@ class Settings(BaseSettings):
     cors_origins: list[AnyHttpUrl] = [AnyHttpUrl("http://localhost:5173")]
     trusted_hosts: list[str] = ["localhost", "127.0.0.1", "testserver"]
 
-    copilot_enabled: bool = False
-    copilot_base_url: str = "http://127.0.0.1:11434"
-    copilot_model: str = "llama3.2:3b"
-    copilot_timeout_seconds: int = Field(default=120, ge=5, le=300)
-
     database_host: str = "localhost"
     database_port: int = 5432
     database_name: str = Field(
@@ -54,13 +48,6 @@ class Settings(BaseSettings):
         """Reject unsafe debug configuration before an application starts."""
         if self.environment == "production" and self.debug:
             raise ValueError("HATSS_DEBUG must be false in production.")
-        parsed_copilot_url = urlparse(self.copilot_base_url)
-        if parsed_copilot_url.scheme != "http" or parsed_copilot_url.hostname not in {
-            "127.0.0.1",
-            "::1",
-            "localhost",
-        }:
-            raise ValueError("HATSS_COPILOT_BASE_URL must reference a local HTTP Ollama server.")
         return self
 
     @property

@@ -9,6 +9,7 @@ class SensorReading(BaseModel):
     fire: bool
     pir: bool
     gas: bool
+    water_level: float = 0.0  # 0-100%
     timestamp: datetime | None = None
 
 
@@ -17,5 +18,7 @@ class SensorStatus(BaseModel):
     fire: bool
     pir: bool
     gas: bool
+    water_level: float = 0.0  # 0-100%
+    water_level_alert: bool = False  # True if water level is high
     last_update: str
     status: str = "connected"
