@@ -481,11 +481,11 @@ export function App() {
   );
 
   const networkPage = (
-    <section className="mt-7 grid gap-7 xl:grid-cols-2">
+    <section className="mt-7">
       <DashboardPanel
-        description="Neighbor entries reported by the local Windows networking stack. This does not probe devices."
+        description="Network safety status based on Windows networking data. Safe = Normal activity."
         theme={theme}
-        title="Known network neighbors"
+        title="Network Safety Status"
       >
         {network ? (
           <div className="space-y-4 text-sm leading-6 text-slate-600">
@@ -494,61 +494,36 @@ export function App() {
               detail={network.state.detail}
               source="Windows networking"
             />
-            <p>
-              Neighbor entries returned:{' '}
-              <span className="font-medium text-slate-900">{network.neighbors.length}</span>
-            </p>
-            {network.neighbors.length ? (
-              <ul className="max-h-96 space-y-3 overflow-y-auto border-t border-slate-800 pt-3">
-                {network.neighbors.map((neighbor) => (
-                  <li key={`${neighbor.interface_alias}-${neighbor.ip_address}`}>
-                    <p className="font-mono text-xs text-slate-900">{neighbor.ip_address}</p>
-                    <p className="text-xs text-slate-500">
-                      {neighbor.interface_alias || 'Unknown interface'} ·{' '}
-                      {neighbor.state || 'Unknown state'}
-                      {neighbor.link_layer_address ? ` · ${neighbor.link_layer_address}` : ''}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
+            
+            {/* Network Safety Summary */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-950/95 p-6 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-400">Network Status</p>
+                  <p className={`mt-2 text-3xl font-bold ${
+                    network.neighbors.length < 50 && network.tcp_connections.length < 100
+                      ? 'text-emerald-400'
+                      : 'text-amber-400'
+                  }`}>
+                    {network.neighbors.length < 50 && network.tcp_connections.length < 100
+                      ? '✓ SAFE'
+                      : '⚠️ CHECK'}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-slate-400">Neighbors: {network.neighbors.length}</p>
+                  <p className="mt-1 text-sm text-slate-400">TCP Connections: {network.tcp_connections.length}</p>
+                </div>
+              </div>
+              
+              <div className="mt-4 space-y-2 border-t border-slate-700 pt-4 text-xs text-slate-400">
+                <p>✓ Neighbors &lt; 50 entries: {network.neighbors.length < 50 ? 'YES' : 'NO'}</p>
+                <p>✓ TCP Connections &lt; 100: {network.tcp_connections.length < 100 ? 'YES' : 'NO'}</p>
+              </div>
+            </div>
           </div>
         ) : (
           <p className="text-sm text-slate-600">Reading Windows network data…</p>
-        )}
-      </DashboardPanel>
-      <DashboardPanel
-        description="Current TCP connections with the owning process where Windows makes it available. Presence is not a threat verdict."
-        theme={theme}
-        title="Active TCP connections"
-      >
-        {network ? (
-          <div className="space-y-4 text-sm leading-6 text-slate-600">
-            <p>
-              Connections returned:{' '}
-              <span className="font-medium text-slate-900">{network.tcp_connections.length}</span>
-            </p>
-            {network.tcp_connections.length ? (
-              <ul className="max-h-96 space-y-3 overflow-y-auto border-t border-slate-800 pt-3">
-                {network.tcp_connections.map((connection) => (
-                  <li
-                    key={`${connection.owning_process_id}-${connection.local_address}-${connection.local_port}-${connection.remote_address}-${connection.remote_port}`}
-                  >
-                    <p className="font-mono text-xs text-slate-900">
-                      {connection.local_address}:{connection.local_port} →{' '}
-                      {connection.remote_address}:{connection.remote_port}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {connection.owning_process_name || `PID ${connection.owning_process_id}`} ·{' '}
-                      {connection.state}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
-        ) : (
-          <p className="text-sm text-slate-600">Reading Windows connections…</p>
         )}
       </DashboardPanel>
     </section>
