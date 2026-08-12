@@ -6,6 +6,7 @@ Requires-Python: >=3.11
 Requires-Dist: alembic<2.0,>=1.14
 Requires-Dist: fastapi<1.0,>=0.115
 Requires-Dist: mediapipe<1.0,>=0.10
+Requires-Dist: ultralytics<9.0,>=8.0
 Requires-Dist: opencv-python<5.0,>=4.8
 Requires-Dist: numpy<2.0,>=1.24
 Requires-Dist: psycopg[binary]<4.0,>=3.2
