@@ -14,7 +14,7 @@ REM Check if backend venv exists
 if not exist "backend\.venv" (
     echo [*] Creating Python virtual environment...
     cd backend
-    python -m venv .venv
+    py -m venv .venv
     cd ..
 )
 
@@ -27,7 +27,7 @@ cd ..
 
 REM Start backend
 echo [*] Starting backend server on http://localhost:8000...
-start cmd /k "cd backend && .venv\Scripts\activate.bat && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+start cmd /k "cd backend && .venv\Scripts\activate.bat && py -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
 
 REM Wait a moment for backend to start
 timeout /t 3 /nobreak
