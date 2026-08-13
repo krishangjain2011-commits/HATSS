@@ -32,13 +32,11 @@ export function SensorMonitor({ theme }: SensorMonitorProps) {
   const [esp32Status, setEsp32Status] = useState<'connected' | 'disconnected'>('disconnected');
 
   useEffect(() => {
-    let consecutiveFailures = 0;
-
     const fetchSensors = async () => {
       try {
         // Primary: Try ESP32 directly (fastest path)
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 500); // Reduce timeout to 500ms
+        const timeoutId = setTimeout(() => controller.abort(), 500);
         
         const response = await fetch('http://192.168.4.1/api/sensors', {
           method: 'GET',
@@ -50,7 +48,6 @@ export function SensorMonitor({ theme }: SensorMonitorProps) {
         if (response.status === 200) {
           const data = await response.json();
           setEsp32Status('connected');
-          consecutiveFailures = 0;
 
           setSensors({
             fire: data.flame === true,
@@ -63,57 +60,66 @@ export function SensorMonitor({ theme }: SensorMonitorProps) {
             last_update: new Date().toLocaleTimeString(),
             source: 'esp32',
           });
-          consecutiveFailures = 0;
           return;
         }
       } catch (error) {
-        consecutiveFailures++;
+        // Continue to fallback
       }
 
-      // Secondary: Only try backend if ESP32 failed 3+ times
-      if (consecutiveFailures >= 3) {
-        try {
-          const response = await fetch('/api/v1/sensors/esp32/live', { signal: AbortSignal.timeout(300) });
+      try {
+        // Fallback: Try backend proxy
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 500);
+        
+        const response = await fetch('/api/v1/sensors/esp32/live', {
+          signal: controller.signal,
+        }).finally(() => clearTimeout(timeoutId));
 
-          if (response.status === 200) {
-            const data = await response.json();
-            setEsp32Status('connected');
+        if (response.status === 200) {
+          const data = await response.json();
+          setEsp32Status('connected');
 
-            setSensors({
-              fire: data.fire === true,
-              pir: data.pir === true,
-              gas: data.gas === true,
-              water_level: parseFloat(data.water_level) || 0,
-              water_level_alert: (parseFloat(data.water_level) || 0) > 75,
-              mq2_rating: parseInt(data.mq2_rating) || 0,
-              mq2_ppm: parseFloat(data.mq2_ppm) || 0,
-              last_update: new Date().toLocaleTimeString(),
-              source: 'esp32',
-            });
-            consecutiveFailures = 0;
-            return;
-          }
-        } catch (error) {
-          // Fallback to stored backend data
-          try {
-            setEsp32Status('disconnected');
-            const response = await fetch('/api/v1/sensors/status', { signal: AbortSignal.timeout(300) });
-            const data = await response.json();
-            setSensors({
-              ...data,
-              source: 'backend',
-              mq2_rating: data.mq2_rating || 0,
-              mq2_ppm: data.mq2_ppm || 0,
-            });
-          } catch (e) {
-            // Silent fail
-          }
+          setSensors({
+            fire: data.fire === true,
+            pir: data.pir === true,
+            gas: data.gas === true,
+            water_level: parseFloat(data.water_level) || 0,
+            water_level_alert: (parseFloat(data.water_level) || 0) > 75,
+            mq2_rating: parseInt(data.mq2_rating) || 0,
+            mq2_ppm: parseFloat(data.mq2_ppm) || 0,
+            last_update: new Date().toLocaleTimeString(),
+            source: 'esp32',
+          });
+          return;
         }
+      } catch (error) {
+        // Continue to final fallback
+      }
+
+      // Final fallback: Stored backend data
+      try {
+        setEsp32Status('disconnected');
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 500);
+        
+        const response = await fetch('/api/v1/sensors/status', {
+          signal: controller.signal,
+        }).finally(() => clearTimeout(timeoutId));
+        
+        const data = await response.json();
+        setSensors({
+          ...data,
+          source: 'backend',
+          mq2_rating: data.mq2_rating || 0,
+          mq2_ppm: data.mq2_ppm || 0,
+        });
+      } catch (error) {
+        // Silent fail
       }
     };
 
     fetchSensors();
-    const interval = setInterval(fetchSensors, 5); // Reduce polling to 5ms for ultra-fast updates
+    const interval = setInterval(fetchSensors, 5);
     return () => clearInterval(interval);
   }, []);
 
