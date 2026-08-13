@@ -13,6 +13,7 @@ interface SensorState {
   last_update: string;
   source?: 'backend' | 'esp32';
   mq2_rating?: number;
+  mq2_ppm?: number; // Raw PPM value from MQ2 sensor
 }
 
 export function SensorMonitor({ theme }: SensorMonitorProps) {
@@ -25,6 +26,7 @@ export function SensorMonitor({ theme }: SensorMonitorProps) {
     last_update: 'Not received',
     source: undefined,
     mq2_rating: 0,
+    mq2_ppm: 0,
   });
 
   const [esp32Status, setEsp32Status] = useState<'connected' | 'disconnected'>('disconnected');
@@ -57,6 +59,7 @@ export function SensorMonitor({ theme }: SensorMonitorProps) {
             water_level: parseFloat(data.water) || 0,
             water_level_alert: (parseFloat(data.water) || 0) > 75,
             mq2_rating: parseInt(data.mq2_rating) || 0,
+            mq2_ppm: parseFloat(data.mq2_ppm) || 0,
             last_update: new Date().toLocaleTimeString(),
             source: 'esp32',
           });
@@ -84,6 +87,7 @@ export function SensorMonitor({ theme }: SensorMonitorProps) {
             water_level: parseFloat(data.water_level) || 0,
             water_level_alert: (parseFloat(data.water_level) || 0) > 75,
             mq2_rating: parseInt(data.mq2_rating) || 0,
+            mq2_ppm: parseFloat(data.mq2_ppm) || 0,
             last_update: new Date().toLocaleTimeString(),
             source: 'esp32',
           });
@@ -105,6 +109,7 @@ export function SensorMonitor({ theme }: SensorMonitorProps) {
           ...data,
           source: 'backend',
           mq2_rating: data.mq2_rating || 0,
+          mq2_ppm: data.mq2_ppm || 0,
         });
       } catch (error) {
         console.error('✗ Stored backend error:', error);
@@ -259,7 +264,7 @@ export function SensorMonitor({ theme }: SensorMonitorProps) {
             <span className="text-2xl font-bold" style={{ color: airQuality.color }}>
               {sensors.mq2_rating}/10
             </span>
-            <span className="text-xs text-slate-500">PPM Level</span>
+            <span className="text-xs text-slate-500">Rating Scale</span>
           </div>
 
           {/* Air Quality Bar */}
@@ -273,6 +278,18 @@ export function SensorMonitor({ theme }: SensorMonitorProps) {
             />
           </div>
         </div>
+
+        {/* MQ2 PPM Value (if available from ESP32) */}
+        {sensors.mq2_ppm !== undefined && sensors.mq2_ppm > 0 && (
+          <div className="mb-3 p-2 rounded bg-slate-100 dark:bg-slate-800">
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-slate-600">MQ2 Sensor PPM:</span>
+              <span className="text-sm font-semibold" style={{ color: airQuality.color }}>
+                {sensors.mq2_ppm.toFixed(1)} PPM
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Air Quality Scale */}
         <div className="flex justify-between text-xs text-slate-500 mb-3">
