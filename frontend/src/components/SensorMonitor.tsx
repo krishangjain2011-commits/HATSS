@@ -32,13 +32,13 @@ export function SensorMonitor({ theme }: SensorMonitorProps) {
   const [esp32Status, setEsp32Status] = useState<'connected' | 'disconnected'>('disconnected');
 
   useEffect(() => {
+    let consecutiveFailures = 0;
+
     const fetchSensors = async () => {
       try {
-        // Try to fetch directly from ESP32 at 192.168.4.1
-        console.log('🔍 Fetching from ESP32 directly (192.168.4.1)...');
-
+        // Primary: Try ESP32 directly (fastest path)
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000);
+        const timeoutId = setTimeout(() => controller.abort(), 500); // Reduce timeout to 500ms
         
         const response = await fetch('http://192.168.4.1/api/sensors', {
           method: 'GET',
@@ -49,8 +49,8 @@ export function SensorMonitor({ theme }: SensorMonitorProps) {
 
         if (response.status === 200) {
           const data = await response.json();
-          console.log('✓ Direct ESP32 data received:', data);
           setEsp32Status('connected');
+          consecutiveFailures = 0;
 
           setSensors({
             fire: data.flame === true,
@@ -63,61 +63,57 @@ export function SensorMonitor({ theme }: SensorMonitorProps) {
             last_update: new Date().toLocaleTimeString(),
             source: 'esp32',
           });
-          console.log('✓ UI Updated with direct ESP32 data');
+          consecutiveFailures = 0;
           return;
         }
       } catch (error) {
-        console.error('✗ Direct ESP32 error:', error);
+        consecutiveFailures++;
       }
 
-      try {
-        // Fallback to backend proxy endpoint
-        console.log('🔌 ESP32 direct unavailable, trying backend proxy...');
-        const response = await fetch('/api/v1/sensors/esp32/live');
+      // Secondary: Only try backend if ESP32 failed 3+ times
+      if (consecutiveFailures >= 3) {
+        try {
+          const response = await fetch('/api/v1/sensors/esp32/live', { signal: AbortSignal.timeout(300) });
 
-        if (response.status === 200) {
-          const data = await response.json();
-          console.log('✓ ESP32 data via backend proxy:', data);
-          setEsp32Status('connected');
+          if (response.status === 200) {
+            const data = await response.json();
+            setEsp32Status('connected');
 
-          setSensors({
-            fire: data.fire === true,
-            pir: data.pir === true,
-            gas: data.gas === true,
-            water_level: parseFloat(data.water_level) || 0,
-            water_level_alert: (parseFloat(data.water_level) || 0) > 75,
-            mq2_rating: parseInt(data.mq2_rating) || 0,
-            mq2_ppm: parseFloat(data.mq2_ppm) || 0,
-            last_update: new Date().toLocaleTimeString(),
-            source: 'esp32',
-          });
-          console.log('✓ UI Updated with backend proxy data');
-          return;
+            setSensors({
+              fire: data.fire === true,
+              pir: data.pir === true,
+              gas: data.gas === true,
+              water_level: parseFloat(data.water_level) || 0,
+              water_level_alert: (parseFloat(data.water_level) || 0) > 75,
+              mq2_rating: parseInt(data.mq2_rating) || 0,
+              mq2_ppm: parseFloat(data.mq2_ppm) || 0,
+              last_update: new Date().toLocaleTimeString(),
+              source: 'esp32',
+            });
+            consecutiveFailures = 0;
+            return;
+          }
+        } catch (error) {
+          // Fallback to stored backend data
+          try {
+            setEsp32Status('disconnected');
+            const response = await fetch('/api/v1/sensors/status', { signal: AbortSignal.timeout(300) });
+            const data = await response.json();
+            setSensors({
+              ...data,
+              source: 'backend',
+              mq2_rating: data.mq2_rating || 0,
+              mq2_ppm: data.mq2_ppm || 0,
+            });
+          } catch (e) {
+            // Silent fail
+          }
         }
-      } catch (error) {
-        console.error('✗ Backend proxy error:', error);
-      }
-
-      // Final fallback to stored backend data
-      try {
-        setEsp32Status('disconnected');
-        console.log('📡 ESP32 unavailable, using stored backend data...');
-        const response = await fetch('/api/v1/sensors/status');
-        const data = await response.json();
-        console.log('✓ Stored backend data:', data);
-        setSensors({
-          ...data,
-          source: 'backend',
-          mq2_rating: data.mq2_rating || 0,
-          mq2_ppm: data.mq2_ppm || 0,
-        });
-      } catch (error) {
-        console.error('✗ Stored backend error:', error);
       }
     };
 
     fetchSensors();
-    const interval = setInterval(fetchSensors, 10);
+    const interval = setInterval(fetchSensors, 5); // Reduce polling to 5ms for ultra-fast updates
     return () => clearInterval(interval);
   }, []);
 
