@@ -1,0 +1,57 @@
+# Git and version control
+.git
+.gitignore
+.gitattributes
+
+# Node.js
+node_modules
+frontend/node_modules
+frontend/dist
+
+# Python
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+backend/.venv
+.venv
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+.env
+*.log
+*.db
+backend/data/intruder_snaps/*
+!backend/data/intruder_snaps/.gitkeep
+
+# Docker (not used on Render native)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Development
+*.local
+.cache
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.circleci
+
+# Documentation (optional to exclude)
+docs/
+documentation/
+
+# Scripts
+start-hatss.*
+build.sh

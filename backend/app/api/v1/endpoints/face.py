@@ -11,7 +11,8 @@ from app.services.face_recognition_v2 import (
     load_embeddings,
     match_face,
     extract_embedding,
-    detect_faces_in_frame
+    detect_faces_in_frame,
+    save_intrusion_snap
 )
 import numpy as np
 from datetime import datetime, UTC
@@ -30,11 +31,13 @@ _current_face_status = {
 
 @router.get("/status", response_model=FaceStatus, summary="Get current face recognition status")
 async def get_face_status() -> FaceStatus:
-    """Get the latest face recognition status."""
+    """Get the latest face recognition status and list of known faces."""
+    known_names = await asyncio.to_thread(get_known_faces_list)
     return FaceStatus(
         label=_current_face_status["label"],
         confidence=_current_face_status["confidence"],
-        last_updated=_current_face_status["last_updated"]
+        last_updated=_current_face_status["last_updated"],
+        known_faces=known_names
     )
 
 
@@ -125,22 +128,23 @@ async def analyze_frame(image: UploadFile = File(...)) -> dict:
         known_embeddings, known_names = await asyncio.to_thread(load_embeddings)
         
         if len(known_embeddings) == 0:
-            # No known faces registered yet
+            # No known faces registered - any face is an intruder
             _current_face_status = {
-                "label": "UNKNOWN",
-                "confidence": 0.5,
+                "label": "INTRUDER",
+                "confidence": 0.0,
                 "last_updated": datetime.now(UTC)
             }
             return {
-                "label": "UNKNOWN",
-                "confidence": 0.5,
+                "label": "INTRUDER",
+                "confidence": 0.0,
                 "faces_detected": len(detections),
-                "message": "No known faces registered. Register some faces first!"
+                "message": "No known faces registered yet! Treating as intruder."
             }
         
         # Match face (CPU-bound, run in thread pool)
+        # Using 0.35 threshold for Euclidean distance (much stricter - only very close matches count as known)
         is_match, matched_name, score = await asyncio.to_thread(
-            match_face, known_embeddings, known_names, embedding, 0.5
+            match_face, known_embeddings, known_names, embedding, 0.35
         )
         
         if is_match:
@@ -158,15 +162,7 @@ async def analyze_frame(image: UploadFile = File(...)) -> dict:
             }
         else:
             # INTRUDER DETECTED - Save frame (I/O-bound, run in thread pool)
-            try:
-                intrusions_dir = Path("data/intruder_snaps")
-                intrusions_dir.mkdir(parents=True, exist_ok=True)
-                timestamp = int(datetime.now(UTC).timestamp())
-                intrusion_path = intrusions_dir / f"{timestamp}.jpg"
-                await asyncio.to_thread(cv2.imwrite, str(intrusion_path), frame)
-                print(f"✅ Intrusion saved: {intrusion_path}")
-            except Exception as e:
-                print(f"⚠️ Failed to save intrusion: {e}")
+            await asyncio.to_thread(save_intrusion_snap, frame)
             
             _current_face_status = {
                 "label": "INTRUDER",
@@ -193,10 +189,15 @@ async def analyze_frame(image: UploadFile = File(...)) -> dict:
         }
 
 
-@router.get("/known", response_model=list[str], summary="List all known faces")
-async def list_known_faces() -> list[str]:
-    """Get list of registered known face names."""
-    return await asyncio.to_thread(get_known_faces_list)
+@router.get("/known", response_model=dict, summary="List all known faces")
+async def list_known_faces() -> dict:
+    """Get list of registered known face names with count."""
+    names = await asyncio.to_thread(get_known_faces_list)
+    return {
+        "count": len(names),
+        "names": names,
+        "registered_faces": names
+    }
 
 
 @router.get("/known/count", response_model=dict, summary="Count of known faces")

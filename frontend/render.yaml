@@ -1,0 +1,10 @@
+services:
+  - type: static_site
+    name: hatss-frontend
+    buildCommand: npm install && npm run build
+    publishDirectory: dist
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: VITE_API_URL
+        value: https://hatss-backend.onrender.com

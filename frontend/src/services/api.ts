@@ -1,4 +1,4 @@
-const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, '');
+const configuredApiBaseUrl = import.meta.env.VITE_API_URL?.replace(/\/+$/, '');
 const apiBaseUrl = configuredApiBaseUrl || '/api/v1';
 
 export function apiPath(path: string): string {
@@ -104,21 +104,6 @@ export interface DefenderScanAction {
   requested_at: string;
 }
 
-export interface CopilotStatus {
-  enabled: boolean;
-  provider: 'ollama';
-  model: string;
-  detail: string;
-}
-
-export interface CopilotBrief {
-  provider: 'ollama';
-  model: string;
-  generated_at: string;
-  evidence_sources: string[];
-  answer: string;
-}
-
 export async function getSystemOverview(signal?: AbortSignal): Promise<SystemOverview> {
   return getJson<SystemOverview>('/system/overview', signal);
 }
@@ -143,17 +128,6 @@ export async function getDefenderScanCapability(
 
 export async function startDefenderScan(directory: string): Promise<DefenderScanAction> {
   return sendJson<DefenderScanAction>('/file-security/defender/scans', { directory });
-}
-
-export async function getCopilotStatus(signal?: AbortSignal): Promise<CopilotStatus> {
-  return getJson<CopilotStatus>('/copilot/status', signal);
-}
-
-export async function requestCopilotBrief(question: string): Promise<CopilotBrief> {
-  return sendJson<CopilotBrief>('/copilot/brief', {
-    confirm_local_evidence: true,
-    question,
-  });
 }
 
 async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {

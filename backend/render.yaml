@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: hatss-backend
+    runtime: python
+    pythonVersion: 3.11
+    buildCommand: pip install -e . && pip install gunicorn
+    startCommand: gunicorn -w 4 -k uvicorn.workers.UvicornWorker app.main:app
+    envVars:
+      - key: HATSS_ENVIRONMENT
+        value: production
+      - key: HATSS_DEBUG
+        value: "false"
+      - key: HATSS_DOCS_ENABLED
+        value: "false"
+      - key: HATSS_DATABASE_HOST
+        value: localhost
+      - key: HATSS_DATABASE_PORT
+        value: "5432"
+      - key: HATSS_CORS_ORIGINS
+        value: '["https://hatss-frontend.onrender.com"]'
+      - key: HATSS_TRUSTED_HOSTS
+        value: '["hatss-backend.onrender.com","localhost"]'
