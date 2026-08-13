@@ -34,9 +34,11 @@ export function SensorMonitor({ theme }: SensorMonitorProps) {
   useEffect(() => {
     const fetchSensors = async () => {
       try {
-        // Primary: Try ESP32 directly (fastest path)
+        // Try to fetch directly from ESP32 at 192.168.4.1
+        console.log('🔍 Fetching from ESP32 directly (192.168.4.1)...');
+
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 500);
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
         
         const response = await fetch('http://192.168.4.1/api/sensors', {
           method: 'GET',
@@ -47,6 +49,7 @@ export function SensorMonitor({ theme }: SensorMonitorProps) {
 
         if (response.status === 200) {
           const data = await response.json();
+          console.log('✓ Direct ESP32 data received:', data);
           setEsp32Status('connected');
 
           setSensors({
@@ -60,16 +63,18 @@ export function SensorMonitor({ theme }: SensorMonitorProps) {
             last_update: new Date().toLocaleTimeString(),
             source: 'esp32',
           });
+          console.log('✓ UI Updated with direct ESP32 data');
           return;
         }
       } catch (error) {
-        // Continue to fallback
+        console.error('✗ Direct ESP32 error:', error);
       }
 
       try {
-        // Fallback: Try backend proxy
+        // Fallback to backend proxy endpoint
+        console.log('🔌 ESP32 direct unavailable, trying backend proxy...');
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 500);
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
         
         const response = await fetch('/api/v1/sensors/esp32/live', {
           signal: controller.signal,
@@ -77,6 +82,7 @@ export function SensorMonitor({ theme }: SensorMonitorProps) {
 
         if (response.status === 200) {
           const data = await response.json();
+          console.log('✓ ESP32 data via backend proxy:', data);
           setEsp32Status('connected');
 
           setSensors({
@@ -90,23 +96,26 @@ export function SensorMonitor({ theme }: SensorMonitorProps) {
             last_update: new Date().toLocaleTimeString(),
             source: 'esp32',
           });
+          console.log('✓ UI Updated with backend proxy data');
           return;
         }
       } catch (error) {
-        // Continue to final fallback
+        console.error('✗ Backend proxy error:', error);
       }
 
-      // Final fallback: Stored backend data
+      // Final fallback to stored backend data
       try {
         setEsp32Status('disconnected');
+        console.log('📡 ESP32 unavailable, using stored backend data...');
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 500);
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
         
         const response = await fetch('/api/v1/sensors/status', {
           signal: controller.signal,
         }).finally(() => clearTimeout(timeoutId));
         
         const data = await response.json();
+        console.log('✓ Stored backend data:', data);
         setSensors({
           ...data,
           source: 'backend',
@@ -114,12 +123,12 @@ export function SensorMonitor({ theme }: SensorMonitorProps) {
           mq2_ppm: data.mq2_ppm || 0,
         });
       } catch (error) {
-        // Silent fail
+        console.error('✗ Stored backend error:', error);
       }
     };
 
     fetchSensors();
-    const interval = setInterval(fetchSensors, 5);
+    const interval = setInterval(fetchSensors, 10);
     return () => clearInterval(interval);
   }, []);
 
